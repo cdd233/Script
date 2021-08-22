@@ -6,6 +6,7 @@
 # author: @raindrop_crz
 # version： v1.0.0  2021.08.22
 # warning: remove it after use!
+# download url: https://raw.githubusercontent.com/cdd233/TEMP/master/CentOS_7.sh
 # ----------------------------------
 
 
