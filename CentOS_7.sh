@@ -4,7 +4,7 @@
 # system: centos 7+
 # usage： chmod u+x
 # author: @raindrop_crz
-# version： v1.0.0  2021.08.22
+# version： v1.0.01  2021.08.23
 # warning: remove it after use!
 # download url: https://raw.githubusercontent.com/cdd233/TEMP/master/CentOS_7.sh
 # ----------------------------------
@@ -48,6 +48,15 @@ echo -e "\n\n"
 echo "[/etc/shadow]"
 cat /etc/shadow | awk -F ':' '{OFS="\t\t"}{print $1,$2,$4,$5}'
 echo -e "\n\n"
+
+echo "[/etc/sudoers]"
+cat /etc/sudoers | grep -v ^# | grep -v ^$ | grep -v ^"Defaults"
+echo -e "\n\n"
+
+echo "[/etc/group]"
+cat /etc/group | grep -E ":0:|:10:"
+echo -e "\n\n"
+
 
 echo "[口令最长有效周期 + MAYBE口令长度:]"
 cat /etc/login.defs | grep -v ^# | grep -E "PASS_MAX_DAYS|PASS_MIN_DAYS|PASS_MIN_LEN"
@@ -99,6 +108,8 @@ echo "[查看文件权限:]"
 ls -l /etc/shadow
 ls -l /etc/passwd
 ls -l /etc/group
+ls -l /etc/sudoers
+ls -l /etc/pam.d/system-auth
 echo -e "\n\n"
 
 echo "[root远程管理开关 + 远程管理是否允许空口令:]"
@@ -139,7 +150,7 @@ echo "[最旧10条审计记录: $audit_max_dir]"
 head -10 "/var/log/audit/$audit_max_dir"
 echo -e "\n"
 
-echo "[日志审计时间:]"
+echo "[audit日志审计时间:]"
 timestamp_start=`head -1 /var/log/audit/$audit_max_dir | awk -F ':' '{print $1}' | awk -F '(' '{print $2}'`
 echo -e "Start Time:\t`date -d@$timestamp_start "+%Y-%m-%d %H:%M:%S"`"
 timestamp_end=`tail -1 /var/log/audit/$audit_min_dir | awk -F ':' '{print $1}' | awk -F '(' '{print $2}'`
@@ -147,8 +158,17 @@ echo -e "End Time:\t`date -d@$timestamp_end "+%Y-%m-%d %H:%M:%S"`"
 echo -e "\n\n"
 
 
-echo "[日志是否转发到日志服务器:]"
-cat /etc/rsyslog.conf | grep -v ^# | grep *.*
+echo "[最新5条审计记录: messages]"
+tail -5 "/var/log/messages"
+echo -e "\n"
+
+echo "[最旧5条审计记录: messages]"
+head -5 "/var/log/messages"
+echo -e "\n\n"
+
+
+echo "[rsyslog转发到日志服务器:]"
+cat /etc/rsyslog.conf | grep -v ^# | grep "\*\.\*"
 echo -e "\n\n"
 
 echo "[日志保存策略:]"
@@ -234,8 +254,11 @@ echo -e "\n\n"
 
 echo "[已启用的服务:]"
 systemctl list-unit-files | grep enable
-echo -e "\n\n"
+echo -e "\n"
 
 
 
-echo "script version ===>> v1.0.0  2021.08.22"
+echo "script version ===>> v1.0.01  2021.08.23"
+echo -e "\n"
+
+echo "警告：使用完毕请务必删除！"
