@@ -42,7 +42,7 @@ echo -e "\n\n"
 
 
 echo "[/etc/passwd]"
-cat /etc/passwd | awk -F ':' '{OFS="\t\t"}{print $1,$7}'
+cat /etc/passwd | awk -F ':' '{OFS="\t\t"}{print $1,$4,$7}'
 echo -e "\n\n"
 
 echo "[/etc/shadow]"
