@@ -4,9 +4,9 @@
 # system: centos 7+
 # usage： chmod u+x
 # author: @raindrop_crz
-# version： v1.0.01  2021.08.23
+# version： v1.02  2021.09.06
 # warning: remove it after use!
-# download url: https://raw.githubusercontent.com/cdd233/TEMP/master/CentOS_7.sh
+# download url: https://raw.githubusercontent.com/cdd233/Script/master/CentOS_7.sh
 # ----------------------------------
 
 
@@ -50,7 +50,7 @@ cat /etc/shadow | awk -F ':' '{OFS="\t\t"}{print $1,$2,$4,$5}'
 echo -e "\n\n"
 
 echo "[/etc/sudoers]"
-cat /etc/sudoers | grep -v ^# | grep -v ^$ | grep -v ^"Defaults"
+cat /etc/sudoers | grep -v ^"Defaults" | grep -v ^# | grep -v ^$
 echo -e "\n\n"
 
 echo "[/etc/group]"
@@ -59,32 +59,34 @@ echo -e "\n\n"
 
 
 echo "[口令最长有效周期 + MAYBE口令长度:]"
-cat /etc/login.defs | grep -v ^# | grep -E "PASS_MAX_DAYS|PASS_MIN_DAYS|PASS_MIN_LEN"
+cat /etc/login.defs | grep -E "PASS_MAX_DAYS|PASS_MIN_DAYS|PASS_MIN_LEN" | grep -v ^#
 echo -e "\n\n"
 
 
-# CentOS 7-: pam_cracklib.so
 # CentOS 7+: pam_pwquality.so
-echo "[口令复杂度 + 登录失败处理1:]"
-cat /etc/pam.d/system-auth | grep pam_pwquality.so
-cat /etc/pam.d/system-auth | grep pam_cracklib.so
+# CentOS 7-: pam_cracklib.so
+echo "[口令复杂度:]"
+cat /etc/pam.d/system-auth | grep pam_pwquality.so | grep -v ^#
+cat /etc/pam.d/system-auth | grep pam_cracklib.so | grep -v ^#
 echo -e "\n\n"
 
 
-echo "[口令复杂度 + 登录失败处理2:]"
-cat /etc/pam.d/system-auth | grep pam_faillock.so
-cat /etc/pam.d/system-auth | grep pam_tally2.so
+# CentOS 8+: pam_faillock.so
+# CentOS 8-: pam_tally2.so
+echo "[登录失败处理:]"
+cat /etc/pam.d/system-auth | grep pam_faillock.so | grep -v ^#
+cat /etc/pam.d/system-auth | grep pam_tally2.so | grep -v ^#
 echo -e "\n\n"
 
 
 echo "[SSH远程管理登录失败处理:]"
-cat /etc/pam.d/sshd | grep -v ^# | grep "pam_tally2.so"
+cat /etc/pam.d/sshd | grep "pam_tally2.so" | grep -v ^#
 echo -e "\n\n"
 
 
 
 echo "[空闲等待时间:]"
-cat /etc/profile | grep TMOUT
+cat /etc/profile | grep TMOUT | grep -v ^#
 echo -e "\n\n"
 
 
@@ -92,9 +94,9 @@ echo -e "\n\n"
 echo "[SSH远程管理服务状态:]"
 systemctl list-unit-files --type=service | grep sshd
 echo -e "\n"
-service sshd status | grep Active
-echo -e "\n\n"
-echo -e "\n\n"
+service sshd status | grep -B5 Active
+echo -e "\n\n\n\n\n\n"
+
 
 
 
@@ -112,15 +114,18 @@ ls -l /etc/sudoers
 ls -l /etc/pam.d/system-auth
 echo -e "\n\n"
 
-echo "[root远程管理开关 + 远程管理是否允许空口令:]"
-cat /etc/ssh/sshd_config | grep -v ^# | grep -E "PermitRootLogin|PermitEmptyPasswords"
+
+echo "[是否允许root远程 + 免密登录 + IP限制: sshd_config]"
+cat /etc/ssh/sshd_config | grep -E "PermitRootLogin|PermitEmptyPasswords|AllowUsers" | grep -v ^#
 echo -e "\n\n"
+
 
 
 echo "[安全标记功能:]"
-cat /etc/selinux/config | grep -v ^# | grep SELINUX=
-echo -e "\n\n"
-echo -e "\n\n"
+cat /etc/selinux/config | grep SELINUX= | grep -v ^#
+echo -e "\n\n\n\n\n\n"
+
+
 
 
 
@@ -132,8 +137,10 @@ echo -e "\n"
 echo "[审计相关服务1: rsyslog + auditd]"
 systemctl list-unit-files --type=service | grep -E "rsyslog|auditd"
 echo -e "\n"
-service rsyslog status | grep Active
-service auditd status | grep Active
+
+service rsyslog status | grep -B5 Active
+echo -e "\n"
+service auditd status | grep -B5 Active
 echo -e "\n\n"
 
 
@@ -167,16 +174,13 @@ head -5 "/var/log/messages"
 echo -e "\n\n"
 
 
-echo "[rsyslog转发到日志服务器:]"
-cat /etc/rsyslog.conf | grep -v ^# | grep "\*\.\*"
+echo "[rsyslog转发至日志服务器:]"
+cat /etc/rsyslog.conf | grep "\*\.\*" | grep -v ^#
 echo -e "\n\n"
 
 echo "[日志保存策略:]"
 cat /etc/logrotate.conf | grep -v ^# | grep -v ^$
 echo -e "\n\n"
-
-# 日志审计中断
-# ?
 
 
 echo "[定时计划任务:]"
@@ -188,8 +192,8 @@ echo "[审计文件访问权限:]"
 ls -l /var/log/messages
 ls -l /var/log/secure
 ls -l /var/log/audit/audit.log
-echo -e "\n\n"
-echo -e "\n\n"
+echo -e "\n\n\n\n\n\n"
+
 
 
 
@@ -213,14 +217,13 @@ echo -e "\n\n"
 echo "[防火墙服务: ]"
 systemctl list-unit-files --type=service | grep firewalld
 echo -e "\n"
-service firewalld status | grep Active
+service firewalld status | grep -B5 Active
 echo -e "\n\n"
 
 
 echo "[系统补丁包:]"
 rpm -qa --last | grep patch
-echo -e "\n\n"
-echo -e "\n\n"
+echo -e "\n\n\n\n\n\n"
 
 
 
@@ -229,7 +232,8 @@ echo -e "\n\n"
 
 
 
-echo "=========系统使用情况========="
+
+echo "=========系统信息========="
 echo -e "\n"
 
 echo "[磁盘使用情况:]"
@@ -238,27 +242,27 @@ echo -e "\n\n"
 
 echo "[内存使用情况:]"
 free -m
-echo -e "\n\n"
-echo -e "\n\n"
+echo -e "\n\n\n\n\n\n"
 
 
 
 
-
-
-echo "[已安装的程序:]"
-yum list installed
-echo -e "\n\n"
 
 
 
 echo "[已启用的服务:]"
 systemctl list-unit-files | grep enable
+echo -e "\n\n"
+
+
+
+echo "[已安装的程序:]"
+yum list installed
 echo -e "\n"
 
 
 
-echo "script version ===>> v1.0.01  2021.08.23"
+echo "script version ===>> v1.02  2021.09.06"
 echo -e "\n"
 
 echo "警告：使用完毕请务必删除！"
