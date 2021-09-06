@@ -79,11 +79,6 @@ cat /etc/pam.d/system-auth | grep pam_tally2.so | grep -v ^#
 echo -e "\n\n"
 
 
-echo "[SSH远程管理登录失败处理:]"
-cat /etc/pam.d/sshd | grep "pam_tally2.so" | grep -v ^#
-echo -e "\n\n"
-
-
 
 echo "[空闲等待时间:]"
 cat /etc/profile | grep TMOUT | grep -v ^#
@@ -134,7 +129,7 @@ echo -e "\n\n\n\n\n\n"
 echo "=========安全审计========="
 echo -e "\n"
 
-echo "[审计相关服务1: rsyslog + auditd]"
+echo "[审计相关服务: rsyslog + auditd]"
 systemctl list-unit-files --type=service | grep -E "rsyslog|auditd"
 echo -e "\n"
 
