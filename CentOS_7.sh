@@ -4,7 +4,7 @@
 # system: centos 7+
 # usage： chmod u+x
 # author: @raindrop_crz
-# version： v1.02  2021.09.06
+# version： v1.03  2021.09.07
 # warning: remove it after use!
 # download url: https://raw.githubusercontent.com/cdd233/Script/master/CentOS_7.sh
 # ----------------------------------
@@ -46,6 +46,7 @@ cat /etc/passwd | awk -F ':' '{OFS="\t\t"}{print $1,$4,$7}'
 echo -e "\n\n"
 
 echo "[/etc/shadow]"
+echo -e "账户\t\t口令\t\t最小修改间隔\t\t最长有效期"
 cat /etc/shadow | awk -F ':' '{OFS="\t\t"}{print $1,$2,$4,$5}'
 echo -e "\n\n"
 
@@ -252,12 +253,12 @@ echo -e "\n\n"
 
 
 echo "[已安装的程序:]"
-yum list installed
+rpm -qa --last | sort
 echo -e "\n"
 
 
 
-echo "script version ===>> v1.02  2021.09.06"
+echo "script version ===>> v1.03  2021.09.07"
 echo -e "\n"
 
 echo "警告：使用完毕请务必删除！"
