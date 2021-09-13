@@ -1,19 +1,44 @@
 #!/bin/bash
 
 # ---------------------------------
-# system: centos 7+
+# system: Part Of The Linux System
 # usage： chmod u+x
 # author: @raindrop_crz
-# version： v1.03  2021.09.07
+# version： v1.05  2021.09.13
 # warning: remove it after use!
-# download url: https://raw.githubusercontent.com/cdd233/Script/master/CentOS_7.sh
+# download url: https://raw.githubusercontent.com/cdd233/Script/master/script_linux.sh
 # ----------------------------------
+
+
+if [ -a /etc/redhat-release ]
+then
+    linux_release=`grep -i centos /etc/redhat-release`
+else
+    linux_release=`lsb_release -i | awk -F ':\t' '{print $NF}'`" "`lsb_release -r | awk -F ':\t' '{print $NF}'`
+fi
+
+
+case `echo $linux_release | awk -F ' ' '{print $1}'` in
+    CentOS)
+        authentication_path="/etc/pam.d/system-auth"
+        package_manager_command="rpm -qa --last"
+        ;;
+    Ubuntu|Debian|Kali)
+        authentication_path="/etc/pam.d/common-password"
+        package_manager_command="dpkg-query -l"
+        ;;
+    *)
+        echo "Could not found Linux release，exit now!"
+        exit 1
+esac
+
+
 
 
 echo -e "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+"
 echo -e "| ip addr:\t\t`hostname -I`"
 echo -e "| running time:\t\t`date '+%Y-%m-%d %H:%M:%S'`"
-echo -e "| linux version:\t`cat /etc/redhat-release`"
+echo -e "| linux version:\t`echo $linux_release`"
 echo -e "| current directory:\t`pwd`"
 echo -e "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+"
 echo -e "\n\n"
@@ -37,52 +62,60 @@ echo "=========身份鉴别========="
 echo -e "\n"
 
 echo "[最后登录时间:]"
-lastlog | grep -v Never
+lastlog | grep -v "\*\*"
 echo -e "\n\n"
 
 
 echo "[/etc/passwd]"
-cat /etc/passwd | awk -F ':' '{OFS="\t\t"}{print $1,$4,$7}'
+echo -e "USER\t\tGID\t\tSHELL"
+grep -v "nologin\|false" /etc/passwd | awk -F ':' '{OFS="\t\t"}{print $1,$4,$7}'
 echo -e "\n\n"
 
 echo "[/etc/shadow]"
-echo -e "账户\t\t口令\t\t最小修改间隔\t\t最长有效期"
-cat /etc/shadow | awk -F ':' '{OFS="\t\t"}{print $1,$2,$4,$5}'
+echo -e "USER\t\tMIN_DAYS\t\tMAX_DAYS\t\tLAST_PASSWD\t\tPASSWD"
+for i in `grep -v "nologin\|false" /etc/passwd | awk -F ':' '{print $1}'`
+do
+    for j in `grep $i /etc/shadow | awk -F ':' '{print $3}'`
+    do
+        next_passwd_time=`date -d "19700101 +$j days" "+%Y.%m.%d"`
+        grep $i /etc/shadow | awk -F ':' '{OFS="\t\t"}{print $1,$4,$5,"'$next_passwd_time'",$2}'
+    done
+done
 echo -e "\n\n"
 
 echo "[/etc/sudoers]"
-cat /etc/sudoers | grep -v ^"Defaults" | grep -v ^# | grep -v ^$
+grep -v '^Defaults\|^#\|^$' /etc/sudoers
 echo -e "\n\n"
 
 echo "[/etc/group]"
-cat /etc/group | grep -E ":0:|:10:"
+for i in `grep -v "nologin\|false" /etc/passwd | awk -F ':' '{print $1}'`; do grep $i /etc/group; done
 echo -e "\n\n"
 
 
 echo "[口令最长有效周期 + MAYBE口令长度:]"
-cat /etc/login.defs | grep -E "PASS_MAX_DAYS|PASS_MIN_DAYS|PASS_MIN_LEN" | grep -v ^#
+grep -E "PASS_MAX_DAYS|PASS_MIN_DAYS|PASS_MIN_LEN" /etc/login.defs | grep -v ^#
 echo -e "\n\n"
 
 
 # CentOS 7+: pam_pwquality.so
 # CentOS 7-: pam_cracklib.so
-echo "[口令复杂度:]"
-cat /etc/pam.d/system-auth | grep pam_pwquality.so | grep -v ^#
-cat /etc/pam.d/system-auth | grep pam_cracklib.so | grep -v ^#
+echo "[口令复杂度: ]"
+grep pam_pwquality.so $authentication_path | grep -v ^#
+grep pam_cracklib.so $authentication_path | grep -v ^#
 echo -e "\n\n"
 
 
 # CentOS 8+: pam_faillock.so
 # CentOS 8-: pam_tally2.so
 echo "[登录失败处理:]"
-cat /etc/pam.d/system-auth | grep pam_faillock.so | grep -v ^#
-cat /etc/pam.d/system-auth | grep pam_tally2.so | grep -v ^#
+grep pam_faillock.so $authentication_path | grep -v ^#
+grep pam_tally2.so $authentication_path | grep -v ^#
 echo -e "\n\n"
 
 
 
 echo "[空闲等待时间:]"
-cat /etc/profile | grep TMOUT | grep -v ^#
+grep TMOUT /etc/profile | grep -v ^#
 echo -e "\n\n"
 
 
@@ -107,18 +140,18 @@ ls -l /etc/shadow
 ls -l /etc/passwd
 ls -l /etc/group
 ls -l /etc/sudoers
-ls -l /etc/pam.d/system-auth
+ls -l $authentication_path
 echo -e "\n\n"
 
 
-echo "[是否允许root远程 + 免密登录 + IP限制: sshd_config]"
-cat /etc/ssh/sshd_config | grep -E "PermitRootLogin|PermitEmptyPasswords|AllowUsers" | grep -v ^#
+echo "[是否允许root远程 + 免密登录: sshd_config]"
+grep -E "PermitRootLogin|PermitEmptyPasswords" /etc/ssh/sshd_config | grep -v ^#
 echo -e "\n\n"
 
 
 
 echo "[安全标记功能:]"
-cat /etc/selinux/config | grep SELINUX= | grep -v ^#
+grep SELINUX= /etc/selinux/config | grep -v ^#
 echo -e "\n\n\n\n\n\n"
 
 
@@ -140,17 +173,13 @@ service auditd status | grep -B5 Active
 echo -e "\n\n"
 
 
-echo "[日志审计规则:]"
-auditctl -l
-echo -e "\n\n"
 
-
-echo "[最新10条审计记录: $audit_min_dir]"
-tail -10 "/var/log/audit/$audit_min_dir"
+echo "[最新5条审计记录: $audit_min_dir]"
+tail -5 "/var/log/audit/$audit_min_dir"
 echo -e "\n"
 
-echo "[最旧10条审计记录: $audit_max_dir]"
-head -10 "/var/log/audit/$audit_max_dir"
+echo "[最旧5条审计记录: $audit_max_dir]"
+head -5 "/var/log/audit/$audit_max_dir"
 echo -e "\n"
 
 echo "[audit日志审计时间:]"
@@ -161,21 +190,22 @@ echo -e "End Time:\t`date -d@$timestamp_end "+%Y-%m-%d %H:%M:%S"`"
 echo -e "\n\n"
 
 
-echo "[最新5条审计记录: messages]"
-tail -5 "/var/log/messages"
-echo -e "\n"
-
-echo "[最旧5条审计记录: messages]"
-head -5 "/var/log/messages"
+echo "[日志审计规则:]"
+auditctl -l
 echo -e "\n\n"
 
 
-echo "[rsyslog转发至日志服务器:]"
-cat /etc/rsyslog.conf | grep "\*\.\*" | grep -v ^#
+echo "[审计配置策略: auditd.conf]"
+grep -E "log_file|num_logs|max_log_file|max_log_file_action" /etc/audit/auditd.conf | grep -v '^#\|^$'
 echo -e "\n\n"
 
-echo "[日志保存策略:]"
-cat /etc/logrotate.conf | grep -v ^# | grep -v ^$
+
+echo "[转发至日志服务器: rsyslog.conf]"
+grep "\*\.\*" /etc/rsyslog.conf | grep -v ^#
+echo -e "\n\n"
+
+echo "[日志保存策略: logrotate.conf]"
+grep -v '^#\|^$' /etc/logrotate.conf
 echo -e "\n\n"
 
 
@@ -187,7 +217,7 @@ echo -e "\n\n"
 echo "[审计文件访问权限:]"
 ls -l /var/log/messages
 ls -l /var/log/secure
-ls -l /var/log/audit/audit.log
+ls -ld /var/log/audit
 echo -e "\n\n\n\n\n\n"
 
 
@@ -204,21 +234,19 @@ netstat -lnp | grep -E "telnet|ftp"
 echo -e "\n\n"
 
 
-echo "[/etc/hosts.allow]"
-cat /etc/hosts.allow | grep -v ^#
-echo "[/etc/hosts.deny]"
-cat /etc/hosts.deny | grep -v ^#
+echo "[网络地址接入限制: sshd_config]"
+grep -E "AllowUsers|DenyUsers" /etc/ssh/sshd_config | grep -v ^#
 echo -e "\n\n"
 
-echo "[防火墙服务: ]"
-systemctl list-unit-files --type=service | grep firewalld
-echo -e "\n"
-service firewalld status | grep -B5 Active
+echo "[/etc/hosts.allow]"
+grep -v '^#\|^$' /etc/hosts.allow
+echo "[/etc/hosts.deny]"
+grep -v '^#\|^$' /etc/hosts.deny
 echo -e "\n\n"
 
 
 echo "[系统补丁包:]"
-rpm -qa --last | grep patch
+$package_manager_command | grep patch
 echo -e "\n\n\n\n\n\n"
 
 
@@ -253,12 +281,12 @@ echo -e "\n\n"
 
 
 echo "[已安装的程序:]"
-rpm -qa --last | sort
+$package_manager_command | sort
 echo -e "\n"
 
 
 
-echo "script version ===>> v1.03  2021.09.07"
+echo "script version ===>> v1.05  2021.09.13"
 echo -e "\n"
 
-echo "警告：使用完毕请务必删除！"
+echo "警告：使完毕请务必在主机上删除本文件！"
